@@ -10,7 +10,7 @@ const char* password = "RoboRasp";
 
 // MQTT Configuration
 
-const char *serverHostname = "192.168.1.100";
+const char *serverHostname = "192.168.1.101";
 const char *topicMessage   = "sector1/message";
 const char *topicParked    = "sector1/parked";
 
@@ -27,7 +27,8 @@ const int greenLed = 4;  //D2
 const int globalDistance = 20;
 long      duration       = 0;
 int       distance       = 0;
-bool      flag           = false;
+int       lastDistance   = 0;
+bool      parked         = false;
 
 void setup() {
   pinMode(redLed, OUTPUT);
@@ -62,17 +63,20 @@ void loop() {
   duration = pulseIn(echoPin, HIGH);
   
   // Calculating the distance
-  distance= duration*0.034/2;
+  distance = duration*0.034/2;
   
   Serial.print("Distância: ");
   Serial.println(distance);
   
-  if(distance < (globalDistance - 5) && flag == false){
+  if(distance < (globalDistance - 5)){
     Serial.println("DETECTADO!!!!!");
-    client.publish(topicParked, "here");
-    Serial.println("a car just parked, sending to topic...");
-    client.subscribe(topicMessage);
-  } else {
+    if(parked == false){
+      client.publish(topicParked, "here");
+      Serial.println("a car just parked, sending to topic...");
+      client.subscribe(topicMessage);
+    }
+    lastDistance = distance;
+  } else if (lastDistance != distance) {
     client.publish(topicParked, "not");
   }
   
@@ -92,12 +96,12 @@ void callback(char *msgTopic, byte *msgPayload, unsigned int msgLength) {
 
   // decode message
   if (strcmp(message, "ok") == 0) {
-    flag = true;
+    parked = true;
   } else if (strcmp(message, "green") == 0) {
     turnOnGreen();
-    flag = false;
   } else if (strcmp(message, "red") == 0) {
     turnOnRed();
+    parked = false;
   } else {
     Serial.println("Aguardando resposta...");
   }

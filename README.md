@@ -1,2 +1,2 @@
-# arduino-testes
-Repositório para guardar testes desenvolvidos em Arduino
+# IoT-development
+Repositório para guardar códigos desenvolvidos para Internet da Coisas

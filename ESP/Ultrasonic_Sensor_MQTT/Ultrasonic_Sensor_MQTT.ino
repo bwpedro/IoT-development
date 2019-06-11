@@ -4,13 +4,13 @@
 #define MAX_MSG_LEN (128)
 
 // Wifi configuration
-const char* ssid     = "";
-const char* password = "";
+const char* ssid     = "RoboRasp";
+const char* password = "RoboRasp";
 
 // MQTT Configuration
-const char *serverHostname = "";
-const char *topicMessage   = "spot1/message";
-const char *topicParked    = "spot1/parked";
+const char* serverHostname = "";
+const char* topicMessage   = "spot1/message";
+const char* topicParked    = "spot1/parked";
 WiFiClient espClient;
 PubSubClient client(espClient);
 
@@ -22,10 +22,11 @@ const int greenLed = 4;  //D2
 
 // defines variables
 int standardDistance = 0;
-int curentDistance   = 0;
+int currentDistance  = 0;
 int lastDistance     = 0;
 long duration        = 0;
 bool parked          = false;
+String messageSent   = "";
 
 void setup() {
   pinMode(redLed, OUTPUT);
@@ -40,8 +41,10 @@ void setup() {
   client.setServer(serverHostname, 1883);
   client.setCallback(callback);
 
+  Serial.println("Waiting to set up standard distance...");
+  delay(8000);
   standardDistance = getDistance();
-  Serial.print("Standard distance: ");
+  Serial.print("Standard distance setted up to: ");
   Serial.println(standardDistance);
 }
 
@@ -60,13 +63,16 @@ void loop() {
   if(currentDistance < (standardDistance - 2)){
     Serial.println("CAR DETECTED!!!!!");
     if(parked == false){
-      client.publish(topicParked, "busy");
-      Serial.println("message 'here' sended to '%s'\n", topicMessage);
+      messageSent = "busy";
+      client.publish(topicParked, messageSent.c_str());
+      Serial.printf("message '%s' sent to '%s'\n", messageSent.c_str(), topicMessage);
       client.subscribe(topicMessage);
     }
   } else if (lastDistance != currentDistance) {
-    client.publish(topicParked, "free");
-    Serial.println("message 'not' sended to '%s'\n", topicMessage);
+    Serial.println("CAR JUST LEFT!!!!!");
+    messageSent = "free";
+    client.publish(topicParked, messageSent.c_str());
+    Serial.printf("message '%s' sent to '%s'\n", messageSent.c_str(), topicMessage);
   }
 
   lastDistance = currentDistance;
@@ -109,7 +115,7 @@ void callback(char *msgTopic, byte *msgPayload, unsigned int msgLength) {
   } else if (strcmp(message, "red") == 0) {
     turnOnRed();
   } else {
-    Serial.println("Aguardando resposta...");
+    Serial.println("Waiting...");
   }
 }
 
@@ -149,9 +155,9 @@ void connectMQTT() {
     if (client.connect(clientId.c_str())) {
       Serial.println("MQTT connected");
 
-      String message = clientId + "connected!";
-      client.publish(topicMessage, message);
-      Serial.println("message %s sended to '%s'\n", message, topicMessage);
+      messageSent = clientId + "connected!\n";
+      client.publish(topicMessage, messageSent.c_str());
+      Serial.printf("message '%s' sent to '%s'\n", messageSent.c_str(), topicMessage);
 
       client.subscribe(topicMessage);
 
